@@ -5,4 +5,10 @@ def sumar(a: int, b: int) -> int:
 
 sumar(5, 3)
 
-# kjashdkjasbdjash
+
+def restar(a: int, b: int) -> int:
+
+    return a - b
+
+
+# kjashdkjasbd
