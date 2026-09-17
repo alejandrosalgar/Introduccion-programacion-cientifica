@@ -450,14 +450,18 @@ Si la desviación estándar cae de forma brusca, la imputación por media (o cua
 
 ```text
 .
-├── README.md
+├── README.md                         # leer, parsear, depurar, imputar
+├── bases de datos columnares.md      # layout columnar, Parquet y Spark
+├── modelos de prediccion.md
 ├── data/
-│   ├── raw/              # archivo original, no se edita a mano
-│   └── processed/        # salidas de parseo / depuración
-├── notebooks/            # exploración y prototipo
-├── src/                  # funciones reutilizables (lectura, limpieza)
+│   ├── raw/                          # archivo original, no se edita a mano
+│   └── processed/                    # CSV depurado y Parquet derivado
+├── notebooks/                        # exploración, prototipo y csv → parquet
+├── src/                              # funciones reutilizables (lectura, limpieza)
 └── requirements.txt
 ```
+
+Tras la limpieza, el siguiente paso de persistencia está en [`bases de datos columnares.md`](bases%20de%20datos%20columnares.md) y en `notebooks/csv a parquet.ipynb`.
 
 Git Flow mínimo para esta entrega: rama `main` estable, rama `develop`, y ramas `feature/...` por avance (lectura, limpieza, prototipo). Los datos crudos grandes no se suben si el proveedor lo prohíbe; en ese caso el README debe indicar la fuente y el script de descarga.
 
@@ -487,3 +491,9 @@ Completar en esta sección o en un documento enlazado:
 - **Dataset:** nombre, fuente, licencia, número de filas y columnas
 - **Variable(s) de interés:**
 - **Limitaciones conocidas del dato:**
+
+---
+
+## 11. Siguiente unidad: persistencia columnar
+
+Cuando el CSV procesado ya es defendible, se exporta a **Parquet** (tipos conservados, lectura por columnas) y se sitúa **Spark** como el mismo modelo mental a otra escala. Material: [`bases de datos columnares.md`](bases%20de%20datos%20columnares.md).

@@ -1,7 +1,5 @@
 # Modelos de predicción
 
-Documento del curso **Introducción a la Programación Científica** (2026-2). Complementa el `README.md` de lectura, parseo, depuración e imputación.
-
 Los descriptivos del notebook (`analisis de hurtos medellin.ipynb`) responden *qué pasó* en el recorte de hurtos a personas en Medellín (bus / taxi / metro). Un modelo predictivo responde otra pregunta: **dado lo que ya sabemos de un hecho (o de un momento y un lugar), ¿qué es razonable esperar?**
 
 No sustituye a la limpieza. Se entrena sobre `hechos` (un registro por evento), no sobre `df_i` (bienes): si un hurto reporta celular y billetera, contar dos filas infla el fenómeno y el modelo aprende el duplicado, no el delito.
