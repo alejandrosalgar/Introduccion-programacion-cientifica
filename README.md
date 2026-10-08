@@ -453,6 +453,7 @@ Si la desviación estándar cae de forma brusca, la imputación por media (o cua
 ├── README.md                         # leer, parsear, depurar, imputar
 ├── bases de datos columnares.md      # layout columnar, Parquet y Spark
 ├── modelos de prediccion.md
+├── tarea 2.md                        # primer análisis en Colab (10 %)
 ├── data/
 │   ├── raw/                          # archivo original, no se edita a mano
 │   └── processed/                    # CSV depurado y Parquet derivado
@@ -497,3 +498,12 @@ Completar en esta sección o en un documento enlazado:
 ## 11. Siguiente unidad: persistencia columnar
 
 Cuando el CSV procesado ya es defendible, se exporta a **Parquet** (tipos conservados, lectura por columnas) y se sitúa **Spark** como el mismo modelo mental a otra escala. Material: [`bases de datos columnares.md`](bases%20de%20datos%20columnares.md).
+
+---
+
+## 12. Tarea 2 — primer análisis en Colab (10 %)
+
+Después de los modelos de predicción, cada equipo aplica el mismo ciclo (limpieza, gráficos, un modelo) sobre **otra** base, en Google Colab. Enunciado, plazo (**14 de octubre de 2026**) y forma de compartir: [`tarea 2.md`](tarea%202.md).
+
+
+## Tarea 2 https://drive.google.com/file/d/1PwpJiYbRvwyv9uRETxYkFGIXPjyWLwGH/view?usp=sharing
