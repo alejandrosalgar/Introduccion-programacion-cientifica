@@ -504,3 +504,6 @@ Cuando el CSV procesado ya es defendible, se exporta a **Parquet** (tipos conser
 ## 12. Tarea 2 — primer análisis en Colab (10 %)
 
 Después de los modelos de predicción, cada equipo aplica el mismo ciclo (limpieza, gráficos, un modelo) sobre **otra** base, en Google Colab. Enunciado, plazo (**14 de octubre de 2026**) y forma de compartir: [`tarea 2.md`](tarea%202.md).
+
+
+## Tarea 2 https://drive.google.com/file/d/1PwpJiYbRvwyv9uRETxYkFGIXPjyWLwGH/view?usp=sharing
