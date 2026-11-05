@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grafos: DFS, BFS y el mapa</title>
+<style>
+  :root {
+    --ink: #1c1915;
+    --muted: #5e564c;
+    --line: #e4dccf;
+    --paper: #f3eadc;
+    --card: #fffdf8;
+    --dfs: #b8431f;
+    --bfs: #0f6e68;
+    --route: #1a56db;
+    --gold: #a16207;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 0% -10%, #fbf6ec 0%, transparent 55%),
+      var(--paper);
+    overflow: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--dfs);
+    outline-offset: 2px;
+  }
+  code, .mono { font-family: Consolas, "Cascadia Mono", "Segoe UI Mono", monospace; }
+
+  .app {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 54px minmax(0, 1fr) 50px;
+  }
+  header.top, footer.nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 18px;
+  }
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: rgba(243, 234, 220, .92);
+  }
+  .brand { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .brand b { color: var(--ink); font-weight: 650; letter-spacing: 0; text-transform: none; font-size: 14px; }
+  #slideName { margin-left: auto; font-family: Georgia, "Palatino Linotype", serif; font-size: 16px; }
+  footer.nav { border-top: 1px solid var(--line); background: rgba(255, 253, 248, .94); }
+  .meter { flex: 1; height: 4px; background: #e5dccb; border-radius: 99px; overflow: hidden; }
+  #meter-bar { height: 100%; width: 0; background: var(--dfs); }
+  #pos { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); min-width: 52px; }
+  .keys { font-size: 12px; color: var(--muted); }
+
+  .slide { display: none; height: 100%; overflow: auto; }
+  .slide.active { display: block; }
+  .slide.full.active { display: flex; flex-direction: column; overflow: hidden; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 28px 48px; }
+  h1, h2, h3 { font-family: Georgia, "Palatino Linotype", serif; font-weight: 500; letter-spacing: -.02em; }
+  h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.08; margin: 0 0 14px; }
+  p { font-size: 18px; line-height: 1.5; }
+  .lede { font-size: 20px; max-width: 68ch; }
+  .muted { color: var(--muted); }
+  .fine { font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+  .hero { min-height: 100%; display: grid; align-items: center; padding: 28px 6vw 40px; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 28px; align-items: center; }
+  .kicker { letter-spacing: .14em; text-transform: uppercase; font-size: 12px; color: var(--dfs); margin: 0 0 12px; }
+  .hero h1 { font-size: clamp(52px, 7vw, 92px); line-height: .92; margin: 0 0 18px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+  .pill { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+  .pill i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-right: 6px; }
+  .rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+  .rule, .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px 16px 14px;
+  }
+  .rule b, .card h3 { display: block; font-family: Georgia, serif; font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  .rule p, .card p { margin: 0; font-size: 15px; line-height: 1.45; }
+  .grid-2 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; align-items: start; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .card.dfs { box-shadow: inset 4px 0 0 var(--dfs); }
+  .card.bfs { box-shadow: inset 4px 0 0 var(--bfs); }
+  .card.dij { box-shadow: inset 4px 0 0 var(--route); }
+  .note {
+    border-left: 3px solid var(--gold);
+    padding: 4px 0 4px 14px;
+    color: var(--muted);
+    font-size: 16px;
+  }
+  pre.snip {
+    background: #1c1915;
+    color: #f6f1e7;
+    border-radius: 16px;
+    padding: 16px 18px;
+    overflow: auto;
+    font-size: 13.5px;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .qa { display: block; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 0 0 8px; }
+  .qa b { font-family: Georgia, serif; font-size: 18px; font-weight: 500; }
+  .answer { display: none; margin: -4px 0 12px; padding: 0 8px 8px 16px; color: var(--muted); }
+  .answer.show { display: block; }
+
+  .btn, .transport button, footer button, .seg button, .arm, .mini {
+    border: 1px solid #d9d0c3;
+    background: var(--card);
+    border-radius: 999px;
+    padding: 8px 14px;
+  }
+  .btn.primary, button.primary, .transport button.primary {
+    background: var(--ink);
+    color: #fffdf8;
+    border-color: var(--ink);
+  }
+  .mini { padding: 6px 10px; font-size: 13px; }
+
+  .lab, .mapapp { flex: 1; min-height: 0; }
+  .lab {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0 14px;
+    padding: 12px 14px 8px;
+  }
+  .lab-stage { min-height: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .lab-stage svg, .map-canvas svg { width: 100%; height: 100%; display: block; }
+  .lab-panel, .side { min-height: 0; overflow: auto; padding: 4px 8px 12px 0; }
+  .lab-panel h2, .side h2 { font-size: 26px; margin: 0 0 8px; }
+  .lab-panel p, .side p { font-size: 15px; margin: 0 0 10px; }
+  .struct-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 8px 0; }
+  .struct-label span, .eyebrow { font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .eyebrow { margin: 0; color: var(--dfs); letter-spacing: .12em; text-transform: uppercase; font-size: 11px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; align-items: center; }
+  .chip { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 8px; font-family: Consolas, monospace; }
+  .chip.top { background: var(--ink); color: white; border-color: var(--ink); }
+  .pathline { font-family: Georgia, serif; font-size: 16px !important; }
+  .pseudo { list-style: none; margin: 8px 0 0; padding: 0; }
+  .pseudo li { padding: 4px 8px; font-size: 12.5px; color: #3d3832; border-radius: 8px; }
+  .pseudo li code { font-size: 12.5px; }
+  .pseudo li.on { background: #fff4d6; box-shadow: inset 3px 0 0 var(--dfs); }
+  .bignum { font-family: Georgia, serif; font-size: 34px; line-height: 1; margin: 4px 0 8px; }
+  .bignum small { display: block; margin-top: 4px; font-family: "Segoe UI", sans-serif; font-size: 13px; color: var(--muted); }
+  .front { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .fr { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 8px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+  .fr.next { border-color: #e8c56b; background: #fff8e8; }
+  .fr b { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .legend { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 99px; margin-right: 6px; vertical-align: -1px; }
+  .lg.pend { background: #f6e2a8; }
+  .lg.ok { background: #1e3a5f; }
+  .lg.now { background: #c2410c; }
+  .lg.road { background: var(--route); }
+  .lg.alt { background: transparent; border: 2px dashed var(--bfs); height: 0; width: 16px; vertical-align: 3px; }
+  .lg.hwy { background: #f6d56a; border-radius: 2px; }
+
+  .transport {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding-top: 8px;
+  }
+  .transport .grow { flex: 1 1 160px; }
+  input[type="range"] { width: 100%; accent-color: var(--dfs); }
+
+  .mapapp {
+    margin: 8px 12px 6px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: #e7e2d6;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(50, 32, 10, .12);
+  }
+  .map-top {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    align-items: center;
+    padding: 8px 10px;
+    background: white;
+    border-bottom: 1px solid #e6e0d6;
+  }
+  .arm { text-align: left; min-width: 160px; border-radius: 12px; }
+  .arm small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .arm.on { box-shadow: inset 0 0 0 2px #1e3a5f; }
+  .seg { display: flex; background: #efe6d6; padding: 3px; border-radius: 999px; }
+  .seg button { border: 0; background: transparent; }
+  .seg button.on { background: #1e3a5f; color: white; }
+  .cmpbar { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .cmpbar span { font-size: 12px; border-radius: 999px; padding: 5px 8px; background: #f6f1e7; border: 1px solid transparent; }
+  .cmpbar span.on { border-color: #1e3a5f; background: white; }
+  .map-canvas { position: relative; min-height: 0; background: #e5efd8; }
+  .side { background: var(--card); border-left: 1px solid #e6e0d6; padding: 12px 14px 16px; }
+  .mapapp .transport { background: white; border-top: 1px solid #e6e0d6; padding: 8px 10px; margin: 0; }
+  #cityMap [data-place] { cursor: pointer; }
+  #cityMap .place:hover .body { stroke: #111; stroke-width: 2.5; }
+  .pulse { transform-box: fill-box; transform-origin: center; animation: ping 1.4s ease-out infinite; }
+  @keyframes ping {
+    0% { transform: scale(1); opacity: .75; }
+    100% { transform: scale(2.1); opacity: 0; }
+  }
+  .cmp-board { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cmp-board .card { padding: 10px; }
+  .cmp-board svg { width: 100%; height: auto; aspect-ratio: 2 / 1; background: #fff; border-radius: 12px; }
+  .cap { font-size: 15px; margin: 8px 4px 0; }
+
+  @media (max-width: 980px) {
+    .hero-grid, .grid-2, .grid-3, .rules, .cmp-board { grid-template-columns: 1fr; }
+    .lab, .mapapp { grid-template-columns: 1fr; }
+    .lab { grid-template-rows: minmax(240px, 1fr) minmax(180px, 34vh) auto; }
+    .lab-panel { padding: 8px 4px; }
+    .mapapp { grid-template-rows: auto minmax(240px, 1fr) minmax(180px, 32vh) auto; margin: 6px; }
+    .map-top, .map-canvas, .side, .mapapp .transport, .lab-stage, .lab-panel, .lab .transport { grid-column: 1; }
+    .map-canvas { grid-row: 2; }
+    .side { grid-row: 3; border-left: 0; border-top: 1px solid #e6e0d6; }
+    .mapapp .transport { grid-row: 4; }
+    .cmpbar { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pulse { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Programación científica · <b>Grafos</b></div>
+    <div id="slideName">Inicio</div>
+  </header>
+  <main id="deck">
+
+    <section class="slide active" data-title="Inicio">
+      <div class="hero">
+        <div class="hero-grid">
+          <div>
+            <p class="kicker">Una clase para abrir en el navegador</p>
+            <h1>Grafos, de la pila al mapa.</h1>
+            <p class="lede">Recorrer un grafo no es lo mismo que encontrar el camino más corto. Primero se ve la diferencia entre DFS y BFS. Después, un mapa al estilo de un navegador muestra cómo se va armando la menor distancia.</p>
+            <div class="pills">
+              <span class="pill"><i style="background:#b8431f"></i>DFS · profundidad</span>
+              <span class="pill"><i style="background:#0f6e68"></i>BFS · calles</span>
+              <span class="pill"><i style="background:#1a56db"></i>Dijkstra · metros</span>
+            </div>
+            <p><button type="button" class="btn primary" id="start-btn">Empezar</button></p>
+            <p class="fine">Doble clic en este archivo. No hace falta servidor, ni instalar nada, ni conexión. Flechas ← → cambian de diapositiva. En los laboratorios, N y P mueven el algoritmo y la barra espaciadora lo reproduce.</p>
+          </div>
+          <svg viewBox="0 0 420 320" aria-hidden="true">
+            <rect width="420" height="320" rx="24" fill="#fffdf8" stroke="#e4dccf"/>
+            <path d="M70 160 L150 70 L250 70 L330 160 L250 250 L150 250 Z" fill="none" stroke="#c8bfb2" stroke-width="3"/>
+            <path d="M150 70 L150 250 M250 70 L250 250 M70 160 L330 160" fill="none" stroke="#c8bfb2" stroke-width="3"/>
+            <path d="M70 160 L150 70 L250 70" fill="none" stroke="#b8431f" stroke-width="5"/>
+            <path d="M70 160 L150 250 L330 160" fill="none" stroke="#0f6e68" stroke-width="5"/>
+            <g font-family="Georgia, serif" font-size="18" text-anchor="middle">
+              <circle cx="70" cy="160" r="18" fill="#1c1915"/><text y="166" fill="#fff" font-size="14">S</text>
+              <circle cx="150" cy="70" r="16" fill="#fffdf8" stroke="#1c1915"/>
+              <circle cx="250" cy="70" r="16" fill="#fffdf8" stroke="#1c1915"/>
+              <circle cx="330" cy="160" r="16" fill="#1a56db" stroke="#1a56db"/>
+              <circle cx="250" cy="250" r="16" fill="#fffdf8" stroke="#1c1915"/>
+              <circle cx="150" cy="250" r="16" fill="#fffdf8" stroke="#1c1915"/>
+            </g>
+            <text x="36" y="300" fill="#5e564c" font-size="13">La ruta corta no siempre es la primera que se recorre.</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Qué es un grafo">
+      <div class="wrap">
+        <p class="kicker">El objeto</p>
+        <h2>Un grafo guarda relaciones, no el dibujo.</h2>
+        <div class="grid-2">
+          <div>
+            <p>Un <b>vértice</b> es una cosa: una esquina, una estación, una persona, un átomo. Una <b>arista</b> dice que dos vértices se relacionan: hay calle entre ellos, se conocen, comparten un enlace.</p>
+            <p>Si el grafo no tiene pesos, dos dibujos distintos pueden ser el mismo problema. Importa quién está conectado con quién, no si la línea quedó larga o corta en la diapositiva.</p>
+            <p class="note">En el laboratorio de DFS y BFS cada arista vale 1, aunque el trazo se vea más largo. El número escrito sobre la línea manda.</p>
+          </div>
+          <div class="card">
+            <h3>Dónde aparece</h3>
+            <p><b>Mapa.</b> Esquinas y calles.</p>
+            <p><b>Curso.</b> Materias y prerrequisitos.</p>
+            <p><b>Web.</b> Páginas y enlaces.</p>
+            <p><b>Molécula.</b> Átomos y enlaces.</p>
+            <p class="fine">El algoritmo no sabe que es Medellín. Solo ve una lista de vecinos y, si hace falta, un número en cada calle.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="El peso">
+      <div class="wrap">
+        <p class="kicker">La pregunta</p>
+        <h2>El peso cambia qué respuesta sirve.</h2>
+        <div class="grid-3">
+          <article class="card dfs">
+            <h3>DFS</h3>
+            <p>Recorre en profundidad, con una pila. Sirve para saber si hay camino y para visitar todo lo alcanzable. El camino por el que llegó no es, en general, el más corto.</p>
+          </article>
+          <article class="card bfs">
+            <h3>BFS</h3>
+            <p>Recorre por olas, con una cola. Si cada arista vale 1, la primera vez que toca un vértice lo hace con el mínimo de aristas. Minimiza calles, no metros.</p>
+          </article>
+          <article class="card dij">
+            <h3>Dijkstra</h3>
+            <p>Suma longitudes positivas. Confirma siempre el pendiente más cercano al origen. Es el mecanismo de la menor distancia en un mapa.</p>
+          </article>
+        </div>
+        <p>Misma red, tres preguntas distintas. El resto de la clase separa esas preguntas con el mismo cuidado con el que no se mezcla un conteo con una suma.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-title="DFS">
+      <div class="wrap">
+        <p class="kicker">Profundidad</p>
+        <h2>DFS sigue un camino hasta que no puede más.</h2>
+        <div class="grid-2">
+          <div>
+            <p>La estructura es una <b>pila</b>: el último que entró es el primero que sale. Desde el vértice actual se apilan los vecinos nuevos y el siguiente paso se hunde por el tope, no por el vecino que quedó debajo.</p>
+            <p>Es la exploración de un edificio: se entra al primer pasillo hasta el fondo y solo entonces se prueba la otra puerta. Cuando un callejón se acaba, se vuelve al último cruce pendiente.</p>
+            <p class="note">Llegar primero a un lugar no significa haber llegado por el menor número de aristas. DFS no compara caminos: los recorre.</p>
+          </div>
+          <div class="card">
+            <h3>La pila de S</h3>
+            <p>S tiene vecinos A y B. Entran en orden inverso para que A quede en el tope.</p>
+            <div class="chips" aria-hidden="true"><span class="chip">B</span><span class="chip top">A</span></div>
+            <p class="fine">Tope a la derecha. El siguiente visitado es A. B espera, aunque sea vecino directo de S.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide full" data-title="Laboratorio DFS" data-player="dfs">
+      <div class="lab" id="lab-dfs">
+        <div class="lab-stage"><svg id="svg-dfs" viewBox="0 0 760 380" role="img" aria-label="Grafo del laboratorio DFS"></svg></div>
+        <aside class="lab-panel">
+          <p class="eyebrow">DFS · pila</p>
+          <h2 data-step-title>Lista para empezar</h2>
+          <p data-step-text>Cada línea vale una arista. El destino del ejemplo es H.</p>
+          <p class="pathline" data-path></p>
+          <div class="struct-label">Pila <span>· el tope queda a la derecha</span></div>
+          <div class="chips" data-stack></div>
+          <ol class="pseudo" data-code></ol>
+        </aside>
+        <div class="transport">
+          <button type="button" data-first>Reiniciar</button>
+          <button type="button" data-prev>Anterior</button>
+          <button type="button" data-next>Siguiente</button>
+          <button type="button" class="primary" data-play>Reproducir</button>
+          <button type="button" data-last>Ver cierre</button>
+          <span class="grow"><input data-range type="range" min="0" max="1" value="0" aria-label="Paso del algoritmo"></span>
+          <span data-count>1 / 1</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="BFS">
+      <div class="wrap">
+        <p class="kicker">Amplitud</p>
+        <h2>BFS atiende por olas, con una cola.</h2>
+        <div class="grid-2">
+          <div>
+            <p>La <b>cola</b> es lo contrario de la pila: el primero que llegó es el primero que se atiende. Primero se visitan los vecinos del origen, después los vecinos de esos vecinos, y así capa por capa.</p>
+            <p>Si cada arista cuesta 1, la primera vez que un vértice entra a la cola ya trae el mínimo de aristas. Una llegada posterior sale de una capa más lejana, así que no puede ser más corta. Por eso no se vuelve a encolar.</p>
+            <p class="note">Ese mínimo es de saltos. Una calle de 2 km y una de 200 m cuentan igual. En un mapa, esa respuesta puede ser la más larga en metros.</p>
+          </div>
+          <div class="card bfs">
+            <h3>La ola desde S</h3>
+            <p>Capa 0: S. Capa 1: A y B. H está en la capa 1, por B, aunque también exista un camino largo por arriba.</p>
+            <div class="chips"><span class="chip top">A</span><span class="chip">B</span></div>
+            <p class="fine">Frente a la izquierda. Sale A antes que B, pero ambos quedan a una arista.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide full" data-title="Laboratorio BFS" data-player="bfs">
+      <div class="lab" id="lab-bfs">
+        <div class="lab-stage"><svg id="svg-bfs" viewBox="0 0 760 380" role="img" aria-label="Grafo del laboratorio BFS"></svg></div>
+        <aside class="lab-panel">
+          <p class="eyebrow" style="color:#0f6e68">BFS · cola</p>
+          <h2 data-step-title>Lista para empezar</h2>
+          <p data-step-text>El número bajo cada letra es la cantidad de aristas desde S.</p>
+          <p class="pathline" data-path></p>
+          <div class="struct-label">Cola <span>· el frente queda a la izquierda</span></div>
+          <div class="chips" data-stack></div>
+          <ol class="pseudo" data-code></ol>
+        </aside>
+        <div class="transport">
+          <button type="button" data-first>Reiniciar</button>
+          <button type="button" data-prev>Anterior</button>
+          <button type="button" data-next>Siguiente</button>
+          <button type="button" class="primary" data-play>Reproducir</button>
+          <button type="button" data-last>Ver cierre</button>
+          <span class="grow"><input data-range type="range" min="0" max="1" value="0" aria-label="Paso del algoritmo"></span>
+          <span data-count>1 / 1</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Dos rutas">
+      <div class="wrap">
+        <p class="kicker">El mismo grafo</p>
+        <h2>Hacia H, los dos algoritmos no cuentan la misma historia.</h2>
+        <div class="cmp-board">
+          <article class="card">
+            <h3 style="color:#b8431f">Árbol de DFS</h3>
+            <svg id="cmp-dfs" viewBox="0 0 760 380"></svg>
+            <p class="cap" id="cmp-dfs-cap"></p>
+          </article>
+          <article class="card">
+            <h3 style="color:#0f6e68">Árbol de BFS</h3>
+            <svg id="cmp-bfs" viewBox="0 0 760 380"></svg>
+            <p class="cap" id="cmp-bfs-cap"></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="El mapa pregunta otra cosa">
+      <div class="wrap">
+        <p class="kicker">De los saltos a los metros</p>
+        <h2>Quien camina no cuenta calles: cuenta distancia.</h2>
+        <p class="lede">En el mapa de clase hay una vía rápida, dibujada en amarillo. Une el origen con el destino en menos calles. También hay un corredor de calles locales, más numerosas y más cortas en total.</p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Menos calles</h3>
+            <p>BFS responde esto. En la ruta de ejemplo, de ITM Robledo a El Poblado, esa respuesta cuesta <b id="ex-bfs">…</b>.</p>
+          </article>
+          <article class="card dij">
+            <h3>Menos metros</h3>
+            <p>Dijkstra responde esto. La misma pareja de lugares queda en <b id="ex-dij">…</b>. La ruta no es la de la vía rápida.</p>
+          </article>
+        </div>
+        <p class="note">El dibujo es un esquema del valle de Medellín para la clase. Cada píxel de calle son 10 metros del modelo. No es el catastro ni el tiempo de viaje de un navegador real.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Dijkstra">
+      <div class="wrap">
+        <p class="kicker">Menor distancia</p>
+        <h2>Dijkstra confirma el pendiente más cercano al origen.</h2>
+        <div class="grid-2">
+          <div>
+            <p>Cada lugar guarda la mejor distancia conocida y el <b>anterior</b>: el lugar desde el cual se consiguió esa marca. Al empezar, el origen está a 0 y el resto en infinito.</p>
+            <p>En cada paso se confirma el pendiente con menor marca. Con longitudes que no restan, esa marca ya no puede mejorar: cualquier otro camino tendría que salir de alguien que está igual o más lejos.</p>
+            <p>Probar una calle es una suma. Si un lugar está a 4,0 km y la calle mide 0,8 km, el vecino quedaría a 4,8 km. Si tenía 6,1 km, la marca baja y el anterior cambia. Si ya tenía 4,5 km, la calle se descarta.</p>
+          </div>
+          <div>
+            <article class="card dij">
+              <h3>Qué se ve en el mapa</h3>
+              <p>El número de cada círculo es la mejor marca, en kilómetros. Ámbar: pendiente. Azul oscuro: confirmado. Naranja: el lugar del paso actual.</p>
+              <p>La mancha crece por distancia, no apuntando al destino. Por eso a veces se confirma un barrio que no va a quedar en la ruta: está más cerca del origen que el destino.</p>
+              <p class="fine">Varios navegadores usan A*, que es esta idea más una estimación de lo que falta. Aquí no hay estimación: se ve el mecanismo solo. Conocer un camino hasta el destino no basta; se confirma cuando el destino es el pendiente más cercano.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide full" data-title="Mapa" data-player="map">
+      <div class="mapapp" id="lab-map">
+        <div class="map-top">
+          <button type="button" class="arm" id="arm-start"><small>Origen</small>ITM Robledo</button>
+          <button type="button" class="mini" id="swap-od" aria-label="Intercambiar origen y destino">⇄</button>
+          <button type="button" class="arm on" id="arm-end"><small>Destino</small>El Poblado</button>
+          <div class="seg" id="algo-seg">
+            <button type="button" data-algo="dijkstra" class="on">Menor distancia</button>
+            <button type="button" data-algo="bfs">Menos calles</button>
+          </div>
+          <div class="cmpbar">
+            <span id="metric-dij"></span>
+            <span id="metric-bfs"></span>
+          </div>
+          <button type="button" class="mini" data-preset="robledo,poblado">Ruta de clase</button>
+          <button type="button" class="mini" data-preset="belen,botanico">Belén → Jardín Botánico</button>
+        </div>
+        <div class="map-canvas">
+          <svg id="cityMap" viewBox="0 0 1020 690" role="img" aria-label="Mapa esquemático de Medellín"></svg>
+        </div>
+        <aside class="side">
+          <p class="eyebrow" data-kicker>Dijkstra</p>
+          <p class="bignum" data-stat>∞</p>
+          <h2 data-step-title>Mapa</h2>
+          <p data-step-text></p>
+          <p class="pathline" data-route></p>
+          <div class="struct-label" data-front-label>Pendientes</div>
+          <div class="front" data-front></div>
+          <ol class="pseudo" data-code></ol>
+          <ul class="legend">
+            <li><i class="lg pend"></i>Pendiente, todavía puede mejorar</li>
+            <li><i class="lg ok"></i>Confirmado</li>
+            <li><i class="lg now"></i>Lugar del paso actual</li>
+            <li><i class="lg road"></i>Ruta que se va reconstruyendo</li>
+            <li><i class="lg alt"></i>La otra respuesta, al cierre</li>
+            <li><i class="lg hwy"></i>Vía rápida: pocas calles, muchos metros</li>
+          </ul>
+          <p class="fine" data-unit>El número del círculo es la mejor distancia conocida, en kilómetros.</p>
+          <p class="fine">Clic en un lugar: cambia el destino. Activa Origen para cambiar la salida. Anillo verde: salida. Anillo rojo: destino. Esquema de clase, 10 metros por píxel.</p>
+        </aside>
+        <div class="transport">
+          <button type="button" data-first>Reiniciar</button>
+          <button type="button" data-prev>Anterior</button>
+          <button type="button" data-next>Siguiente</button>
+          <button type="button" data-mark>Siguiente lugar</button>
+          <button type="button" class="primary" data-play>Reproducir</button>
+          <button type="button" data-last>Ver ruta</button>
+          <span class="grow"><input data-range type="range" min="0" max="1" value="0" aria-label="Paso del mapa"></span>
+          <span data-count>1 / 1</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="En Python">
+      <div class="wrap">
+        <p class="kicker">Del dibujo al código</p>
+        <h2>La pila, la cola y la cola de prioridad.</h2>
+        <p>El grafo del laboratorio es una lista de vecinos. El del mapa es una lista de pares <span class="mono">(vecino, metros)</span>. Esto es el mismo mecanismo que los laboratorios, sin la animación.</p>
+        <pre class="snip">from collections import deque
+import heapq
+
+def bfs(grafo, origen):
+    dist = {origen: 0}
+    cola = deque([origen])
+    while cola:
+        u = cola.popleft()
+        for v in grafo[u]:
+            if v not in dist:
+                dist[v] = dist[u] + 1
+                cola.append(v)
+    return dist
+
+def dijkstra(grafo, origen):
+    dist = {origen: 0}
+    previo = {origen: None}
+    cola = [(0, origen)]
+    while cola:
+        d, u = heapq.heappop(cola)
+        if d != dist.get(u):
+            continue
+        for v, peso in grafo[u]:
+            nd = d + peso
+            if nd &lt; dist.get(v, float("inf")):
+                dist[v] = nd
+                previo[v] = u
+                heapq.heappush(cola, (nd, v))
+    return dist, previo</pre>
+        <p class="fine">DFS cabe en una recursión: visitar y luego llamar a cada vecino no visto. La pila, en ese caso, es la pila de llamadas. <span class="mono">heapq</span> es la cola de prioridad: siempre entrega la menor distancia acumulada.</p>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Cierre">
+      <div class="wrap">
+        <p class="kicker">Para llevar</p>
+        <h2>Tres estructuras, tres preguntas.</h2>
+        <p>Pila: seguir un camino. Cola: mínimo de aristas. Cola de prioridad: mínimo de una suma con pesos que no son negativos.</p>
+        <button type="button" class="qa"><b>¿Por qué BFS no minimiza metros?</b></button>
+        <p class="answer">Porque trata cada arista como 1. Una vía rápida de un solo tramo le gana a cuatro calles cortas, aunque la suma de esas cuatro sea menor.</p>
+        <button type="button" class="qa"><b>¿Por qué Dijkstra confirma lugares que no están en la ruta?</b></button>
+        <p class="answer">Porque crece por distancia al origen, como una mancha, no en dirección al destino. Todo lo que está más cerca que el destino se confirma antes.</p>
+        <button type="button" class="qa"><b>¿Y si todas las calles midieran lo mismo?</b></button>
+        <p class="answer">Minimizar calles y minimizar metros sería la misma pregunta. BFS y Dijkstra elegirían una ruta del mismo largo. En cuanto las longitudes difieren, las rutas se separan.</p>
+        <button type="button" class="qa"><b>¿Qué pasa con una longitud negativa?</b></button>
+        <p class="answer">Una calle real no resta metros. Si un peso pudiera ser negativo, confirmar un lugar dejaría de ser seguro. Para un mapa no hace falta ese caso.</p>
+        <p class="fine">Archivo único: HTML, CSS y JavaScript. Ábrelo con doble clic cada vez que quieras repetir la clase.</p>
+      </div>
+    </section>
+
+  </main>
+  <footer class="nav">
+    <button type="button" id="prev">Anterior</button>
+    <div class="meter" aria-hidden="true"><div id="meter-bar"></div></div>
+    <span class="keys">← → · N P · espacio</span>
+    <span id="pos">1 / 1</span>
+    <button type="button" class="primary" id="next">Siguiente</button>
+  </footer>
+</div>
+<script>
+const M_PER_PX = 10;
+
+const PLACES = [
+  { id: "robledo", name: "ITM Robledo", x: 160, y: 70 },
+  { id: "floresta", name: "Floresta", x: 300, y: 175 },
+  { id: "udea", name: "U. de Antioquia", x: 470, y: 155 },
+  { id: "botanico", name: "Jardín Botánico", x: 640, y: 175 },
+  { id: "moravia", name: "Moravia", x: 780, y: 70 },
+  { id: "estadio", name: "Estadio", x: 175, y: 285 },
+  { id: "laureles", name: "Laureles", x: 340, y: 310 },
+  { id: "rutan", name: "Ruta N", x: 520, y: 275 },
+  { id: "prado", name: "Prado", x: 690, y: 245 },
+  { id: "sanjavier", name: "San Javier", x: 130, y: 440 },
+  { id: "nutibara", name: "Nutibara", x: 325, y: 455 },
+  { id: "centro", name: "Parque Berrío", x: 530, y: 440 },
+  { id: "alpujarra", name: "La Alpujarra", x: 700, y: 415 },
+  { id: "belen", name: "Belén", x: 195, y: 600 },
+  { id: "guayabal", name: "Guayabal", x: 400, y: 605 },
+  { id: "poblado", name: "El Poblado", x: 590, y: 575 },
+  { id: "envigado", name: "Envigado", x: 800, y: 590 },
+  { id: "regional", name: "Nudo vial", x: 930, y: 310 }
+];
+
+const LABELS = {
+  robledo: [0, -32, "middle"],
+  moravia: [0, -32, "middle"],
+  floresta: [0, -30, "middle"],
+  udea: [0, -30, "middle"],
+  botanico: [0, 40, "middle"],
+  estadio: [-24, 5, "end"],
+  laureles: [0, -30, "middle"],
+  rutan: [26, -14, "start"],
+  prado: [24, 5, "start"],
+  sanjavier: [0, -30, "middle"],
+  nutibara: [0, 38, "middle"],
+  centro: [28, 5, "start"],
+  alpujarra: [0, -30, "middle"],
+  belen: [0, 36, "middle"],
+  guayabal: [0, 36, "middle"],
+  poblado: [0, -32, "middle"],
+  envigado: [0, 36, "middle"],
+  regional: [0, -30, "middle"]
+};
+
+const EDGES = [
+  ["robledo", "floresta", "local"],
+  ["floresta", "udea", "local"],
+  ["udea", "botanico", "local"],
+  ["botanico", "moravia", "local"],
+  ["robledo", "moravia", "hwy"],
+  ["moravia", "regional", "hwy"],
+  ["regional", "poblado", "hwy"],
+  ["robledo", "estadio", "local"],
+  ["floresta", "laureles", "local"],
+  ["udea", "rutan", "local"],
+  ["botanico", "prado", "local"],
+  ["moravia", "prado", "local"],
+  ["estadio", "laureles", "local"],
+  ["laureles", "rutan", "local"],
+  ["rutan", "prado", "local"],
+  ["estadio", "sanjavier", "local"],
+  ["laureles", "nutibara", "local"],
+  ["rutan", "centro", "local"],
+  ["prado", "alpujarra", "local"],
+  ["sanjavier", "nutibara", "local"],
+  ["nutibara", "centro", "local"],
+  ["centro", "alpujarra", "local"],
+  ["sanjavier", "belen", "local"],
+  ["nutibara", "guayabal", "local"],
+  ["centro", "poblado", "local"],
+  ["alpujarra", "envigado", "local"],
+  ["belen", "guayabal", "local"],
+  ["guayabal", "poblado", "local"],
+  ["poblado", "envigado", "local"],
+  ["floresta", "estadio", "local"],
+  ["prado", "regional", "hwy"],
+  ["laureles", "centro", "local"]
+];
+
+const LAB_NODES = [
+  { id: "S", x: 90, y: 175 },
+  { id: "A", x: 250, y: 68 },
+  { id: "B", x: 250, y: 292 },
+  { id: "C", x: 420, y: 68 },
+  { id: "D", x: 420, y: 188 },
+  { id: "E", x: 590, y: 68 },
+  { id: "H", x: 590, y: 292 }
+];
+const LAB_EDGES = [["S", "A"], ["S", "B"], ["A", "C"], ["C", "D"], ["C", "E"], ["E", "H"], ["B", "H"]];
+const LAB_NEXT = {
+  S: ["A", "B"],
+  A: ["C", "S"],
+  B: ["H", "S"],
+  C: ["D", "E", "A"],
+  D: ["C"],
+  E: ["H", "C"],
+  H: ["B", "E"]
+};
+
+const CODE = {
+  dfs: [
+    "pila ← [origen]",
+    "visitados ← ∅",
+    "mientras la pila no esté vacía:",
+    "u ← sacar el tope",
+    "si u ya fue visitado, seguir",
+    "marcar u como visitado",
+    "para cada vecino, en orden inverso:",
+    "si v es nuevo, apilar v"
+  ],
+  bfs: [
+    "cola ← [origen]; dist[origen] ← 0",
+    "vistos ← {origen}",
+    "mientras la cola no esté vacía:",
+    "u ← sacar el frente de la cola",
+    "si u es el destino, su dist en calles es mínima",
+    "para cada vecino v de u:",
+    "si v es nuevo: dist[v] ← dist[u] + 1; encolar v"
+  ],
+  dijkstra: [
+    "dist[origen] ← 0; el resto ← ∞",
+    "pendientes ← {origen}",
+    "mientras pendientes no esté vacío:",
+    "u ← pendiente con menor dist; confirmar u",
+    "si u es el destino, reconstruir y terminar",
+    "para cada vecino v no confirmado:",
+    "si dist[u] + peso(u, v) < dist[v], actualizar"
+  ]
+};
+
+const PLACE = Object.fromEntries(PLACES.map((p) => [p.id, p]));
+const LAB_POS = Object.fromEntries(LAB_NODES.map((p) => [p.id, p]));
+
+function edgeKey(a, b) {
+  return a < b ? a + "|" + b : b + "|" + a;
+}
+
+function buildGraph() {
+  const adj = {};
+  PLACES.forEach((p) => { adj[p.id] = []; });
+  const seg = [];
+  EDGES.forEach(([a, b, kind]) => {
+    const pa = PLACE[a];
+    const pb = PLACE[b];
+    const w = Math.round(Math.hypot(pa.x - pb.x, pa.y - pb.y) * M_PER_PX);
+    adj[a].push({ to: b, w, kind });
+    adj[b].push({ to: a, w, kind });
+    seg.push({ a, b, w, kind });
+  });
+  Object.keys(adj).forEach((id) => {
+    adj[id].sort((u, v) => u.to.localeCompare(v.to));
+  });
+  return { adj, seg };
+}
+
+const GRAPH = buildGraph();
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
+
+function nameOf(id) {
+  return PLACE[id] ? PLACE[id].name : id;
+}
+
+function fmt(m) {
+  if (m == null || !isFinite(m)) return "∞";
+  if (m < 1000) return Math.round(m) + " m";
+  return (Math.round(m / 100) / 10).toFixed(1).replace(".", ",") + " km";
+}
+
+function calles(n) {
+  return n === 1 ? "1 calle" : n + " calles";
+}
+
+function pathFrom(prev, end, start) {
+  if (!prev) return null;
+  if (end !== start && (prev[end] == null)) return null;
+  const path = [];
+  let c = end;
+  const guard = new Set();
+  while (c != null && !guard.has(c)) {
+    guard.add(c);
+    path.push(c);
+    if (c === start) break;
+    c = prev[c];
+  }
+  path.reverse();
+  if (path[0] !== start) return null;
+  return path;
+}
+
+function frontierFromDist(dist, settled) {
+  return Object.keys(dist)
+    .filter((id) => isFinite(dist[id]) && !settled.has(id))
+    .map((id) => ({ id, d: dist[id] }))
+    .sort((a, b) => a.d - b.d || a.id.localeCompare(b.id));
+}
+
+function samePath(a, b) {
+  return !!a && !!b && a.join("|") === b.join("|");
+}
+
+function silentDijkstra(start, end) {
+  const dist = {};
+  const prev = {};
+  PLACES.forEach((p) => { dist[p.id] = Infinity; prev[p.id] = null; });
+  dist[start] = 0;
+  const settled = new Set();
+  const pq = [{ id: start, d: 0 }];
+  while (pq.length) {
+    pq.sort((a, b) => a.d - b.d || a.id.localeCompare(b.id));
+    const item = pq.shift();
+    if (settled.has(item.id) || item.d !== dist[item.id]) continue;
+    settled.add(item.id);
+    if (item.id === end) break;
+    GRAPH.adj[item.id].forEach((e) => {
+      if (settled.has(e.to)) return;
+      const alt = dist[item.id] + e.w;
+      if (alt < dist[e.to]) {
+        dist[e.to] = alt;
+        prev[e.to] = item.id;
+        pq.push({ id: e.to, d: alt });
+      }
+    });
+  }
+  const path = pathFrom(prev, end, start);
+  return { dist, prev, meters: dist[end], path };
+}
+
+function silentBfs(start, end) {
+  const dist = { [start]: 0 };
+  const prev = { [start]: null };
+  const q = [start];
+  while (q.length) {
+    const u = q.shift();
+    if (u === end) break;
+    GRAPH.adj[u].forEach((e) => {
+      if (e.to in dist) return;
+      dist[e.to] = dist[u] + 1;
+      prev[e.to] = u;
+      q.push(e.to);
+    });
+  }
+  const path = pathFrom(prev, end, start);
+  let meters = 0;
+  if (path) {
+    for (let i = 1; i < path.length; i++) {
+      const edge = GRAPH.adj[path[i - 1]].find((e) => e.to === path[i]);
+      meters += edge.w;
+    }
+  }
+  return { hops: path ? path.length - 1 : Infinity, meters, path, dist, prev };
+}
+
+function baseSnap(mode, dist, prev, settled, frontier, meters) {
+  return {
+    mode,
+    dist: { ...dist },
+    prev: { ...prev },
+    settled: [...settled],
+    frontier: frontier.map((f) => ({ ...f })),
+    meters: meters ? { ...meters } : null,
+    current: null,
+    focus: null,
+    path: null,
+    altPath: null
+  };
+}
+
+function dijkstraSteps(start, end) {
+  const dist = {};
+  const prev = {};
+  PLACES.forEach((p) => { dist[p.id] = Infinity; prev[p.id] = null; });
+  dist[start] = 0;
+  const settled = new Set();
+  const pq = [{ id: start, d: 0 }];
+  const steps = [];
+
+  steps.push({
+    ...baseSnap("dijkstra", dist, prev, settled, frontierFromDist(dist, settled)),
+    kind: "init",
+    line: 1,
+    title: "Todo en infinito, menos el origen",
+    text: nameOf(start) + " queda a 0 m. Los demás lugares todavía no tienen camino, así que su marca es infinito."
+  });
+
+  while (pq.length) {
+    pq.sort((a, b) => a.d - b.d || a.id.localeCompare(b.id));
+    const item = pq.shift();
+    if (settled.has(item.id) || item.d !== dist[item.id]) continue;
+    settled.add(item.id);
+    const rival = frontierFromDist(dist, settled)[0];
+    let text;
+    if (item.id === end) {
+      text = nameOf(end) + " es el pendiente más cercano, a " + fmt(dist[end]) + ". Con longitudes que no restan, esa marca ya es la menor distancia.";
+    } else if (item.id === start) {
+      text = "El origen es el lugar más cercano a sí mismo. Lo confirmo y empiezo a probar sus calles.";
+    } else if (rival) {
+      text = nameOf(item.id) + " es el pendiente más cercano, a " + fmt(dist[item.id]) + ". " + nameOf(rival.id) + " espera, a " + fmt(rival.d) + ".";
+    } else {
+      text = nameOf(item.id) + " era el último pendiente. Su distancia " + fmt(dist[item.id]) + " queda fija.";
+    }
+    steps.push({
+      ...baseSnap("dijkstra", dist, prev, settled, frontierFromDist(dist, settled)),
+      kind: "settle",
+      line: 4,
+      current: item.id,
+      title: "Confirmo " + nameOf(item.id),
+      text
+    });
+    if (item.id === end) break;
+
+    GRAPH.adj[item.id].forEach((e) => {
+      if (settled.has(e.to)) return;
+      const before = dist[e.to];
+      const alt = dist[item.id] + e.w;
+      const improved = alt < before;
+      if (improved) {
+        dist[e.to] = alt;
+        prev[e.to] = item.id;
+        pq.push({ id: e.to, d: alt });
+      }
+      let rtext;
+      if (improved && !isFinite(before)) {
+        rtext = nameOf(e.to) + " no tenía camino. Por " + nameOf(item.id) + ": " + fmt(dist[item.id]) + " + " + fmt(e.w) + " = " + fmt(alt) + ".";
+        if (e.kind === "hwy") rtext += " Es la vía rápida: una sola calle y muchos metros. Entra a pendientes, detrás de lo que está cerca.";
+      } else if (improved) {
+        rtext = nameOf(e.to) + " baja de " + fmt(before) + " a " + fmt(alt) + " (" + fmt(dist[item.id]) + " + " + fmt(e.w) + "). El anterior ahora es " + nameOf(item.id) + ".";
+      } else {
+        rtext = nameOf(e.to) + " no mejora: " + fmt(dist[item.id]) + " + " + fmt(e.w) + " = " + fmt(alt) + ", y ya hay un camino de " + fmt(before) + ".";
+      }
+      if (improved && e.to === end) {
+        rtext += " Ya hay una marca en el destino, pero todavía no está confirmada: otro pendiente más cercano podría mejorar el camino.";
+      }
+      steps.push({
+        ...baseSnap("dijkstra", dist, prev, settled, frontierFromDist(dist, settled)),
+        kind: "relax",
+        line: 7,
+        current: item.id,
+        focus: { from: item.id, to: e.to, improved },
+        title: improved ? "Mejora " + nameOf(e.to) : "No mejora " + nameOf(e.to),
+        text: rtext
+      });
+    });
+  }
+
+  const finalPath = pathFrom(prev, end, start);
+  const off = steps.find((s) => s.kind === "settle" && s.current !== start && s.current !== end && finalPath && finalPath.indexOf(s.current) === -1);
+  if (off) {
+    off.text += " Este lugar no quedará en la ruta: está más cerca del origen que el destino. Dijkstra llena ese radio; no camina apuntando al destino.";
+  }
+  const snap = baseSnap("dijkstra", dist, prev, settled, frontierFromDist(dist, settled));
+  steps.push({
+    ...snap,
+    kind: "done",
+    line: 5,
+    current: end,
+    title: "Toca reconstruir",
+    text: "El destino ya es definitivo. La ruta se arma saltando al anterior de cada lugar, desde " + nameOf(end) + " hasta " + nameOf(start) + "."
+  });
+  finalPath.forEach((node, k) => {
+    if (k === 0) return;
+    steps.push({
+      ...snap,
+      kind: "trace",
+      line: 5,
+      current: node,
+      path: finalPath.slice(0, k + 1),
+      title: nameOf(finalPath[k - 1]) + " → " + nameOf(node),
+      text: "El anterior de " + nameOf(node) + " es " + nameOf(finalPath[k - 1]) + ". Esa calle entra en la ruta. Hasta aquí van " + fmt(dist[node]) + "."
+    });
+  });
+  const bfs = silentBfs(start, end);
+  const differ = !samePath(finalPath, bfs.path);
+  steps.push({
+    ...snap,
+    kind: "summary",
+    line: 5,
+    path: finalPath,
+    altPath: differ ? bfs.path : null,
+    title: "Menor distancia: " + fmt(dist[end]),
+    text: finalPath.map(nameOf).join(" → ") + ". " + fmt(dist[end]) + " en " + calles(finalPath.length - 1) + ". " + (differ
+      ? "BFS habría ido por " + bfs.path.map(nameOf).join(" → ") + ": " + calles(bfs.hops) + " y " + fmt(bfs.meters) + "."
+      : "En este origen y destino, menos calles y menos metros coinciden.")
+  });
+  return steps;
+}
+
+function bfsMapSteps(start, end) {
+  const dist = { [start]: 0 };
+  const meters = { [start]: 0 };
+  const prev = { [start]: null };
+  const queue = [start];
+  const processed = [];
+  const steps = [];
+  const seen = new Set([start]);
+
+  function snap(q) {
+    return baseSnap("bfs", dist, prev, processed, q.map((id) => ({ id, d: dist[id] })), meters);
+  }
+
+  steps.push({
+    ...snap(queue),
+    kind: "init",
+    line: 1,
+    title: "La cola empieza en el origen",
+    text: "BFS no suma metros. El número del círculo va a ser la cantidad de calles. " + nameOf(start) + " está a 0 calles."
+  });
+
+  while (queue.length) {
+    const u = queue.shift();
+    processed.push(u);
+    const known = [];
+    const fresh = [];
+    GRAPH.adj[u].forEach((e) => {
+      if (seen.has(e.to)) known.push(e);
+      else fresh.push(e);
+    });
+    let text = u === start
+      ? "Sale el origen. Sus vecinos van a quedar a una calle."
+      : nameOf(u) + " sale de la cola con " + calles(dist[u]) + ". Ese número ya no cambia.";
+    if (u === end) {
+      text = nameOf(end) + " sale de la cola. La primera vez que entró ya traía el mínimo de calles: " + calles(dist[end]) + ", y por este árbol son " + fmt(meters[end]) + ".";
+    } else if (known.length && u !== start) {
+      text += " Ya estaban vistos: " + known.map((e) => nameOf(e.to)).join(", ") + ". Volver a ellos no acorta la cantidad de calles.";
+    }
+    steps.push({
+      ...snap(queue),
+      kind: "settle",
+      line: u === end ? 5 : 4,
+      current: u,
+      title: u === end ? "El destino sale de la cola" : "Sale " + nameOf(u),
+      text
+    });
+    if (u === end) break;
+    fresh.forEach((e) => {
+      seen.add(e.to);
+      dist[e.to] = dist[u] + 1;
+      meters[e.to] = meters[u] + e.w;
+      prev[e.to] = u;
+      queue.push(e.to);
+      let rtext = nameOf(e.to) + " entra a la cola a " + calles(dist[e.to]) + ". Por este árbol lleva " + fmt(meters[e.to]) + ".";
+      if (e.kind === "hwy") rtext += " La calle es de la vía rápida: cuenta como una, aunque sume muchos metros.";
+      if (e.to === end) rtext += " Es la primera vez en el destino. En calles, esta cifra ya es mínima; en metros, puede no serlo.";
+      steps.push({
+        ...snap(queue),
+        kind: "relax",
+        line: 7,
+        current: u,
+        focus: { from: u, to: e.to, improved: true },
+        title: "Encolo " + nameOf(e.to),
+        text: rtext
+      });
+    });
+  }
+
+  const finalPath = pathFrom(prev, end, start);
+  const frozen = baseSnap("bfs", dist, prev, processed, queue.map((id) => ({ id, d: dist[id] })), meters);
+  const dij = silentDijkstra(start, end);
+  const differ = !samePath(finalPath, dij.path);
+  steps.push({
+    ...frozen,
+    kind: "done",
+    line: 5,
+    current: end,
+    title: "Mínimo de calles",
+    text: "BFS se detiene en el conteo. Ahora se dibuja el árbol, de anterior en anterior."
+  });
+  finalPath.forEach((node, k) => {
+    if (k === 0) return;
+    steps.push({
+      ...frozen,
+      kind: "trace",
+      line: 5,
+      current: node,
+      path: finalPath.slice(0, k + 1),
+      title: nameOf(finalPath[k - 1]) + " → " + nameOf(node),
+      text: "El anterior de " + nameOf(node) + " es " + nameOf(finalPath[k - 1]) + "."
+    });
+  });
+  steps.push({
+    ...frozen,
+    kind: "summary",
+    line: 5,
+    path: finalPath,
+    altPath: differ ? dij.path : null,
+    title: calles(finalPath.length - 1) + " · " + fmt(meters[end]),
+    text: finalPath.map(nameOf).join(" → ") + ". " + (differ
+      ? "La menor distancia es otra ruta: " + dij.path.map(nameOf).join(" → ") + ", con " + fmt(dij.meters) + " y " + calles(dij.path.length - 1) + "."
+      : "En este par, menos calles y menos metros coinciden.")
+  });
+  return steps;
+}
+
+function dfsSteps() {
+  const stack = [{ id: "S", parent: null }];
+  const visited = new Set();
+  const parent = {};
+  const visitOrder = {};
+  let n = 0;
+  const steps = [];
+
+  function snap(extra) {
+    return Object.assign({
+      mode: "dfs",
+      kind: "visit",
+      line: 6,
+      title: "",
+      text: "",
+      current: null,
+      closed: [...visited],
+      structure: stack.map((s) => s.id),
+      prev: { ...parent },
+      visitOrder: { ...visitOrder },
+      dist: null,
+      focus: null
+    }, extra);
+  }
+
+  steps.push(snap({
+    kind: "init",
+    line: 1,
+    title: "La pila arranca con S",
+    text: "DFS no abre todos los vecinos primero. Mira el tope, y el tope va a ser el último que entre."
+  }));
+
+  while (stack.length) {
+    const item = stack.pop();
+    const u = item.id;
+    if (visited.has(u)) {
+      steps.push(snap({
+        kind: "skip",
+        line: 5,
+        current: u,
+        title: u + " ya estaba visitado",
+        text: "Estaba repetido en la pila. Sacarlo no abre un camino nuevo."
+      }));
+      continue;
+    }
+    visited.add(u);
+    n += 1;
+    visitOrder[u] = n;
+    parent[u] = item.parent;
+    const fresh = [];
+    LAB_NEXT[u].forEach((v) => {
+      if (!visited.has(v) && !stack.some((s) => s.id === v)) fresh.push(v);
+    });
+    let text = "Marco " + u + " y miro a sus vecinos. El que quede en el tope será el siguiente hundimiento.";
+    if (u === "H") text = "H se visita por la pila: S, A, C, E y H. Son 4 aristas. DFS no pregunta si había un atajo.";
+    if (u === "B") text = "B esperó en el fondo desde el primer paso, debajo de A. Desde B se ve H en una arista, pero H ya fue visitado: DFS no corrige la ruta.";
+    steps.push(snap({
+      kind: "visit",
+      line: 6,
+      current: u,
+      title: "Visito " + u,
+      text
+    }));
+    for (let i = fresh.length - 1; i >= 0; i--) {
+      const v = fresh[i];
+      stack.push({ id: v, parent: u });
+      const onTop = i === 0;
+      steps.push(snap({
+        kind: "push",
+        line: 8,
+        current: u,
+        focus: { from: u, to: v },
+        title: onTop ? v + " queda en el tope" : "Apilo " + v,
+        text: onTop
+          ? "El siguiente paso se hunde por " + v + ", no por los vecinos que quedaron debajo."
+          : v + " entra a la pila. Todavía falta apilar al vecino que exploraremos primero."
+      }));
+    }
+  }
+
+  const route = pathFrom(parent, "H", "S");
+  steps.push(snap({
+    kind: "summary",
+    line: 3,
+    current: null,
+    title: "DFS terminó",
+    text: "El árbol llega a H por " + route.join(" → ") + ", con " + calles(route.length - 1) + ". El mínimo de aristas es S → B → H, con 2 calles. DFS no lo eligió."
+  }));
+  return steps;
+}
+
+function bfsSteps() {
+  const queue = ["S"];
+  const seen = new Set(["S"]);
+  const processed = [];
+  const dist = { S: 0 };
+  const prev = { S: null };
+  const steps = [];
+
+  function snap(extra) {
+    return Object.assign({
+      mode: "bfs",
+      kind: "visit",
+      line: 4,
+      title: "",
+      text: "",
+      current: null,
+      closed: [...processed],
+      structure: [...queue],
+      prev: { ...prev },
+      dist: { ...dist },
+      visitOrder: {},
+      focus: null
+    }, extra);
+  }
+
+  steps.push(snap({
+    kind: "init",
+    line: 1,
+    title: "La cola arranca con S",
+    text: "S queda a 0 aristas. A partir de aquí, cada vecino nuevo hereda la distancia del frente más una arista."
+  }));
+
+  while (queue.length) {
+    const u = queue.shift();
+    processed.push(u);
+    const fresh = LAB_NEXT[u].filter((v) => !seen.has(v));
+    let text = u === "S"
+      ? "Sale S. A y B van a quedar en la primera capa."
+      : "Sale " + u + ", que está a " + calles(dist[u]) + ". Esa cifra quedó fija cuando entró a la cola.";
+    if (u === "H") text = "H sale de la cola a 2 aristas, por B. El camino largo de arriba no puede mejorar ese número.";
+    steps.push(snap({
+      kind: "settle",
+      line: u === "H" ? 5 : 4,
+      current: u,
+      title: "Sale " + u,
+      text
+    }));
+    fresh.forEach((v) => {
+      seen.add(v);
+      dist[v] = dist[u] + 1;
+      prev[v] = u;
+      queue.push(v);
+      let rtext = v + " entra al fondo de la cola, a " + calles(dist[v]) + ".";
+      if (v === "H") rtext = "H entra por primera vez, desde B, a 2 aristas. Aunque después se vea otro camino, no va a ser más corto en saltos.";
+      steps.push(snap({
+        kind: "push",
+        line: 7,
+        current: u,
+        focus: { from: u, to: v },
+        title: "Encolo " + v,
+        text: rtext
+      }));
+    });
+  }
+
+  const route = pathFrom(prev, "H", "S");
+  steps.push(snap({
+    kind: "summary",
+    line: 5,
+    current: null,
+    title: "BFS terminó",
+    text: "H queda a " + calles(dist.H) + " por " + route.join(" → ") + ". La primera vez que se alcanzó ya era el mínimo de aristas."
+  }));
+  return steps;
+}
+
+function fillCode(ol, lines) {
+  ol.innerHTML = lines.map((line, i) => `<li data-line="${i + 1}"><code>${esc(line)}</code></li>`).join("");
+}
+
+function markCode(ol, line) {
+  ol.querySelectorAll("li").forEach((li) => {
+    li.classList.toggle("on", Number(li.dataset.line) === line);
+  });
+}
+
+function drawLab(svg, step) {
+  const mode = step.mode;
+  const main = mode === "bfs" ? "#0f6e68" : "#b8431f";
+  const soft = mode === "bfs" ? "#d7f3ef" : "#fde7df";
+  const closed = new Set(step.closed || []);
+  const waiting = new Set(step.structure || []);
+  const route = pathFrom(step.prev || {}, "H", "S");
+  const onRoute = new Set();
+  if (route) {
+    for (let i = 1; i < route.length; i++) onRoute.add(edgeKey(route[i - 1], route[i]));
+  }
+  const tree = new Set();
+  Object.keys(step.prev || {}).forEach((id) => {
+    if (step.prev[id]) tree.add(edgeKey(step.prev[id], id));
+  });
+  const parts = [];
+  parts.push(`<rect width="760" height="380" fill="#fffdf8"/>`);
+  parts.push(`<text x="24" y="28" fill="#5e564c" font-size="13">Cada número 1 es una arista. La longitud del trazo no es distancia.</text>`);
+  LAB_EDGES.forEach(([a, b]) => {
+    const pa = LAB_POS[a];
+    const pb = LAB_POS[b];
+    const key = edgeKey(a, b);
+    const focus = step.focus && edgeKey(step.focus.from, step.focus.to) === key;
+    let color = "#d9d0c3";
+    let width = 3;
+    if (tree.has(key)) { color = main; width = 4; }
+    if (onRoute.has(key)) { color = main; width = 7; }
+    if (focus) { color = "#1c1915"; width = 5; }
+    const mx = (pa.x + pb.x) / 2;
+    const my = (pa.y + pb.y) / 2;
+    const dx = pb.x - pa.x;
+    const dy = pb.y - pa.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ox = -dy / len * 14;
+    const oy = dx / len * 14;
+    parts.push(`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`);
+    parts.push(`<text x="${mx + ox}" y="${my + oy}" text-anchor="middle" font-size="13" fill="#5e564c" stroke="#fffdf8" stroke-width="4" paint-order="stroke">1</text>`);
+  });
+  LAB_NODES.forEach((p) => {
+    const isCurrent = step.current === p.id;
+    const isClosed = closed.has(p.id);
+    const isWait = waiting.has(p.id) && !isClosed;
+    let fill = "#ffffff";
+    let ink = "#1c1915";
+    if (isWait) { fill = soft; }
+    if (isClosed) { fill = main; ink = "#ffffff"; }
+    const ring = p.id === "S" ? "#188038" : (p.id === "H" ? "#d93025" : "#1c1915");
+    parts.push(`<circle cx="${p.x}" cy="${p.y}" r="27" fill="none" stroke="${ring}" stroke-width="${p.id === "S" || p.id === "H" ? 3 : 0}"/>`);
+    parts.push(`<circle cx="${p.x}" cy="${p.y}" r="22" fill="${fill}" stroke="${isCurrent ? "#e8a317" : "#1c1915"}" stroke-width="${isCurrent ? 5 : 2}"/>`);
+    parts.push(`<text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="16" font-family="Georgia, serif" fill="${ink}">${p.id}</text>`);
+    if (step.visitOrder && step.visitOrder[p.id]) {
+      parts.push(`<circle cx="${p.x + 18}" cy="${p.y - 18}" r="10" fill="#1c1915"/>`);
+      parts.push(`<text x="${p.x + 18}" y="${p.y - 14}" text-anchor="middle" font-size="11" fill="#fff">${step.visitOrder[p.id]}</text>`);
+    }
+    if (step.dist && step.dist[p.id] != null) {
+      parts.push(`<text x="${p.x}" y="${p.y + 42}" text-anchor="middle" font-size="12" fill="#3d3832">${step.dist[p.id]}</text>`);
+    }
+  });
+  parts.push(`<text x="90" y="224" text-anchor="middle" font-size="12" fill="#188038">origen</text>`);
+  parts.push(`<text x="590" y="340" text-anchor="middle" font-size="12" fill="#d93025">destino</text>`);
+  svg.innerHTML = parts.join("");
+}
+
+function renderTraversal(root, svg, step) {
+  root.querySelector("[data-step-title]").textContent = step.title;
+  root.querySelector("[data-step-text]").textContent = step.text;
+  markCode(root.querySelector("[data-code]"), step.line);
+  const chips = root.querySelector("[data-stack]");
+  if (!step.structure.length) {
+    chips.innerHTML = `<span class="fine">vacía</span>`;
+  } else {
+    const last = step.structure.length - 1;
+    const front = step.mode === "bfs" ? 0 : last;
+    chips.innerHTML = step.structure.map((id, i) => `<span class="chip${i === front ? " top" : ""}">${id}</span>`).join("");
+  }
+  const route = pathFrom(step.prev || {}, "H", "S");
+  const pathEl = root.querySelector("[data-path]");
+  pathEl.textContent = route
+    ? "Camino hasta H: " + route.join(" → ") + " · " + calles(route.length - 1)
+    : "H todavía no tiene camino en este recorrido.";
+  drawLab(svg, step);
+}
+
+const mapState = { start: "robledo", end: "poblado", algo: "dijkstra", arm: "end" };
+
+function drawMap(step) {
+  const svg = document.getElementById("cityMap");
+  const settled = new Set(step.settled || []);
+  const front = new Map((step.frontier || []).map((f) => [f.id, f.d]));
+  const tree = new Set();
+  Object.keys(step.prev || {}).forEach((id) => {
+    if (step.prev[id]) tree.add(edgeKey(step.prev[id], id));
+  });
+  const thick = new Set();
+  (step.path || []).forEach((id, i) => {
+    if (i > 0) thick.add(edgeKey(step.path[i - 1], id));
+  });
+  const alt = new Set();
+  (step.altPath || []).forEach((id, i) => {
+    if (i > 0) {
+      const key = edgeKey(step.altPath[i - 1], id);
+      if (!thick.has(key)) alt.add(key);
+    }
+  });
+  const parts = [];
+  parts.push(`<rect width="1020" height="690" fill="#e7f0dc"/>`);
+  parts.push(`<ellipse cx="250" cy="330" rx="46" ry="30" fill="#c9e2bf"/>`);
+  parts.push(`<ellipse cx="600" cy="210" rx="88" ry="46" fill="#c5e0b8"/>`);
+  parts.push(`<ellipse cx="310" cy="470" rx="58" ry="40" fill="#b7d7a8"/>`);
+  parts.push(`<ellipse cx="640" cy="545" rx="78" ry="36" fill="#d3ebc8"/>`);
+  [[210, 100, 70, 36], [360, 96, 78, 34], [560, 188, 70, 32], [200, 330, 72, 40], [430, 300, 68, 42], [600, 300, 70, 36], [220, 500, 70, 32], [470, 490, 64, 30], [700, 470, 72, 34]].forEach(([x, y, w, h]) => {
+    parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="#efe6d6" opacity="0.9"/>`);
+  });
+  parts.push(`<path d="M430 0 C450 90 400 150 425 230 C460 320 455 390 470 480 C490 560 470 620 500 690" fill="none" stroke="#9fd0e6" stroke-width="18" stroke-linecap="round"/>`);
+  parts.push(`<text x="448" y="300" fill="#3d6f86" font-size="13" transform="rotate(-78 448 300)">Río Medellín</text>`);
+  GRAPH.seg.forEach((seg) => {
+    const pa = PLACE[seg.a];
+    const pb = PLACE[seg.b];
+    const casing = seg.kind === "hwy" ? 16 : 11;
+    const fill = seg.kind === "hwy" ? 9 : 6;
+    const casingColor = seg.kind === "hwy" ? "#e0b84a" : "#d5d1c8";
+    const fillColor = seg.kind === "hwy" ? "#f6d56a" : "#ffffff";
+    parts.push(`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="${casingColor}" stroke-width="${casing}" stroke-linecap="round"/>`);
+    parts.push(`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="${fillColor}" stroke-width="${fill}" stroke-linecap="round"/>`);
+  });
+  parts.push(`<text x="430" y="52" text-anchor="middle" fill="#8a6a1d" font-size="13">Vía rápida</text>`);
+  function drawChain(keys, color, width, dash) {
+    keys.forEach((key) => {
+      const [a, b] = key.split("|");
+      const pa = PLACE[a];
+      const pb = PLACE[b];
+      parts.push(`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`);
+    });
+  }
+  drawChain(alt, step.mode === "bfs" ? "#1a56db" : "#0f6e68", 5, "7 6");
+  drawChain(tree, "#1a56db", 4);
+  if (thick.size) {
+    drawChain(thick, "#174ea6", 12);
+    drawChain(thick, "#1a73e8", 7);
+  }
+  if (step.focus) {
+    const pa = PLACE[step.focus.from];
+    const pb = PLACE[step.focus.to];
+    const color = step.focus.improved ? "#188038" : "#d93025";
+    parts.push(`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="${color}" stroke-width="6" stroke-linecap="round"${step.focus.improved ? "" : ` stroke-dasharray="5 5"`}/>`);
+  }
+  PLACES.forEach((p) => {
+    const current = step.current === p.id;
+    const isSettled = settled.has(p.id);
+    const isFront = front.has(p.id);
+    let fill = "#ffffff";
+    let ink = "#9aa0a6";
+    let stroke = "#5f6368";
+    if (isFront) { fill = "#f6e2a8"; ink = "#1c1915"; stroke = "#b5810b"; }
+    if (isSettled) { fill = "#1e3a5f"; ink = "#ffffff"; stroke = "#1e3a5f"; }
+    if (current) { fill = "#c2410c"; ink = "#ffffff"; stroke = "#9a3412"; }
+    const value = nodeValue(p.id, step);
+    const lab = LABELS[p.id];
+    parts.push(`<g class="place">`);
+    if (current) parts.push(`<circle class="pulse" cx="${p.x}" cy="${p.y}" r="16" fill="transparent" stroke="#c2410c" stroke-width="2"/>`);
+    if (p.id === mapState.start) parts.push(`<circle cx="${p.x}" cy="${p.y}" r="24" fill="none" stroke="#188038" stroke-width="3"/>`);
+    if (p.id === mapState.end) parts.push(`<circle cx="${p.x}" cy="${p.y}" r="24" fill="none" stroke="#d93025" stroke-width="3"/>`);
+    parts.push(`<circle class="body" cx="${p.x}" cy="${p.y}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>`);
+    parts.push(`<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${ink}">${value}</text>`);
+    parts.push(`<text x="${p.x + lab[0]}" y="${p.y + lab[1]}" text-anchor="${lab[2]}" font-size="13" font-weight="650" fill="#202124" stroke="#ffffff" stroke-width="4" paint-order="stroke">${esc(p.name)}</text>`);
+    parts.push(`<circle data-place="${p.id}" cx="${p.x}" cy="${p.y}" r="24" fill="transparent"><title>${esc(p.name)}</title></circle>`);
+    parts.push(`</g>`);
+  });
+  parts.push(`<polygon points="46,34 40,52 46,47 52,52" fill="#1c1915"/>`);
+  parts.push(`<text x="46" y="28" text-anchor="middle" font-size="12" font-weight="700">N</text>`);
+  parts.push(`<line x1="40" y1="652" x2="90" y2="652" stroke="#1c1915" stroke-width="4"/>`);
+  parts.push(`<line x1="90" y1="652" x2="140" y2="652" stroke="#ffffff" stroke-width="4"/>`);
+  parts.push(`<text x="40" y="644" font-size="12" fill="#1c1915">500 m</text>`);
+  parts.push(`<text x="620" y="668" font-size="12" fill="#5e564c">Esquema de clase · 10 m por píxel · no es el catastro</text>`);
+  svg.innerHTML = parts.join("");
+  svg.querySelectorAll("[data-place]").forEach((node) => {
+    node.addEventListener("click", () => pickPlace(node.getAttribute("data-place")));
+  });
+}
+
+function nodeValue(id, step) {
+  const m = step.dist ? step.dist[id] : undefined;
+  if (step.mode === "bfs") {
+    if (m == null || !isFinite(m)) return "∞";
+    return String(m);
+  }
+  if (m == null || !isFinite(m)) return "∞";
+  if (m === 0) return "0";
+  return (Math.round(m / 100) / 10).toFixed(1).replace(".", ",");
+}
+
+function renderMap(step) {
+  const root = document.getElementById("lab-map");
+  root.querySelector("[data-kicker]").textContent = step.mode === "bfs" ? "BFS · menos calles" : "Dijkstra · menos metros";
+  const unit = root.querySelector("[data-unit]");
+  if (unit) {
+    unit.textContent = step.mode === "bfs"
+      ? "El número del círculo es la cantidad de calles, no los kilómetros."
+      : "El número del círculo es la mejor distancia conocida, en kilómetros.";
+  }
+  root.querySelector("[data-step-title]").textContent = step.title;
+  root.querySelector("[data-step-text]").textContent = step.text;
+  const end = mapState.end;
+  const stat = root.querySelector("[data-stat]");
+  if (step.mode === "bfs") {
+    const hops = step.dist[end];
+    const meters = step.meters ? step.meters[end] : Infinity;
+    stat.innerHTML = !isFinite(hops)
+      ? "∞<small>calles hasta el destino</small>"
+      : calles(hops) + `<small>${isFinite(meters) ? esc(fmt(meters)) + " por esas calles" : ""}</small>`;
+  } else {
+    const m = step.dist[end];
+    const settled = (step.settled || []).indexOf(end) !== -1;
+    stat.innerHTML = !isFinite(m)
+      ? "∞<small>el destino todavía no tiene camino</small>"
+      : esc(fmt(m)) + `<small>${settled ? "confirmados" : "mejor marca, aún puede bajar"}</small>`;
+  }
+  const routeEl = root.querySelector("[data-route]");
+  routeEl.textContent = step.path && step.path.length
+    ? step.path.map(nameOf).join(" → ")
+    : "";
+  root.querySelector("[data-front-label]").textContent = step.mode === "bfs"
+    ? "Cola · primero el frente"
+    : "Pendientes · primero el más cercano";
+  const frontEl = root.querySelector("[data-front]");
+  if (!step.frontier.length) frontEl.innerHTML = `<p class="fine">Vacía</p>`;
+  else {
+    frontEl.innerHTML = step.frontier.map((f, i) => {
+      const val = step.mode === "bfs" ? calles(f.d) : fmt(f.d);
+      return `<div class="fr${i === 0 ? " next" : ""}"><span>${esc(nameOf(f.id))}</span><b>${esc(val)}</b></div>`;
+    }).join("");
+  }
+  const ol = root.querySelector("[data-code]");
+  if (ol.dataset.algo !== step.mode) {
+    fillCode(ol, step.mode === "bfs" ? CODE.bfs : CODE.dijkstra);
+    ol.dataset.algo = step.mode;
+  }
+  markCode(ol, step.line);
+  drawMap(step);
+}
+
+function mountPlayer(root, build, render) {
+  let steps = [];
+  let index = 0;
+  let timer = null;
+  const range = root.querySelector("[data-range]");
+  const count = root.querySelector("[data-count]");
+  const playBtn = root.querySelector("[data-play]");
+
+  function stop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    playBtn.textContent = "Reproducir";
+  }
+
+  function show(n) {
+    if (!steps.length) return;
+    index = Math.max(0, Math.min(steps.length - 1, n));
+    range.max = String(steps.length - 1);
+    range.value = String(index);
+    count.textContent = (index + 1) + " / " + steps.length;
+    render(steps[index]);
+  }
+
+  function rebuild() {
+    stop();
+    steps = build();
+    show(0);
+  }
+
+  root.querySelector("[data-prev]").addEventListener("click", () => { stop(); show(index - 1); });
+  root.querySelector("[data-next]").addEventListener("click", () => { stop(); show(index + 1); });
+  root.querySelector("[data-first]").addEventListener("click", () => { stop(); show(0); });
+  root.querySelector("[data-last]").addEventListener("click", () => { stop(); show(steps.length - 1); });
+  const markBtn = root.querySelector("[data-mark]");
+  if (markBtn) {
+    markBtn.addEventListener("click", () => {
+      stop();
+      const kinds = new Set(["settle", "done", "trace", "summary"]);
+      let next = index + 1;
+      while (next < steps.length && !kinds.has(steps[next].kind)) next += 1;
+      show(Math.min(next, steps.length - 1));
+    });
+  }
+  playBtn.addEventListener("click", () => {
+    if (timer) { stop(); return; }
+    if (index >= steps.length - 1) show(0);
+    playBtn.textContent = "Pausa";
+    timer = setInterval(() => {
+      if (index >= steps.length - 1) { stop(); return; }
+      show(index + 1);
+    }, 1000);
+  });
+  range.addEventListener("input", () => { stop(); show(Number(range.value)); });
+
+  return {
+    rebuild,
+    stop,
+    step(delta) { stop(); show(index + delta); },
+    toggle() { playBtn.click(); }
+  };
+}
+
+const players = {};
+let slideIndex = 0;
+let slides = [];
+
+function currentPlayer() {
+  const name = slides[slideIndex] && slides[slideIndex].dataset.player;
+  return name ? players[name] : null;
+}
+
+function goSlide(n) {
+  Object.keys(players).forEach((key) => players[key].stop());
+  slideIndex = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((slide, i) => slide.classList.toggle("active", i === slideIndex));
+  document.getElementById("slideName").textContent = slides[slideIndex].dataset.title || "";
+  document.getElementById("pos").textContent = (slideIndex + 1) + " / " + slides.length;
+  document.getElementById("meter-bar").style.width = ((slideIndex + 1) / slides.length * 100) + "%";
+  document.getElementById("prev").disabled = slideIndex === 0;
+  document.getElementById("next").disabled = slideIndex === slides.length - 1;
+}
+
+function updateArms() {
+  const startBtn = document.getElementById("arm-start");
+  const endBtn = document.getElementById("arm-end");
+  startBtn.innerHTML = "<small>Origen</small>" + esc(nameOf(mapState.start));
+  endBtn.innerHTML = "<small>Destino</small>" + esc(nameOf(mapState.end));
+  startBtn.classList.toggle("on", mapState.arm === "start");
+  endBtn.classList.toggle("on", mapState.arm === "end");
+}
+
+function updateCmp() {
+  const d = silentDijkstra(mapState.start, mapState.end);
+  const b = silentBfs(mapState.start, mapState.end);
+  const dij = document.getElementById("metric-dij");
+  const bfs = document.getElementById("metric-bfs");
+  dij.textContent = "Metros " + fmt(d.meters) + " · " + calles(d.path.length - 1);
+  bfs.textContent = "Calles " + fmt(b.meters) + " · " + calles(b.hops);
+  dij.title = "Dijkstra: menor distancia";
+  bfs.title = "BFS: menos calles";
+  dij.classList.toggle("on", mapState.algo === "dijkstra");
+  bfs.classList.toggle("on", mapState.algo === "bfs");
+}
+
+function pickPlace(id) {
+  if (mapState.arm === "start") {
+    if (id === mapState.end) return;
+    mapState.start = id;
+  } else {
+    if (id === mapState.start) return;
+    mapState.end = id;
+  }
+  updateArms();
+  updateCmp();
+  players.map.rebuild();
+}
+
+function init() {
+  slides = [...document.querySelectorAll(".slide")];
+  fillCode(document.querySelector("#lab-dfs [data-code]"), CODE.dfs);
+  fillCode(document.querySelector("#lab-bfs [data-code]"), CODE.bfs);
+
+  players.dfs = mountPlayer(
+    document.getElementById("lab-dfs"),
+    dfsSteps,
+    (step) => renderTraversal(document.getElementById("lab-dfs"), document.getElementById("svg-dfs"), step)
+  );
+  players.bfs = mountPlayer(
+    document.getElementById("lab-bfs"),
+    bfsSteps,
+    (step) => renderTraversal(document.getElementById("lab-bfs"), document.getElementById("svg-bfs"), step)
+  );
+  players.map = mountPlayer(
+    document.getElementById("lab-map"),
+    () => (mapState.algo === "bfs" ? bfsMapSteps(mapState.start, mapState.end) : dijkstraSteps(mapState.start, mapState.end)),
+    renderMap
+  );
+  players.dfs.rebuild();
+  players.bfs.rebuild();
+  players.map.rebuild();
+
+  const dfsAll = dfsSteps();
+  const bfsAll = bfsSteps();
+  const dfsLast = dfsAll[dfsAll.length - 1];
+  const bfsLast = bfsAll[bfsAll.length - 1];
+  drawLab(document.getElementById("cmp-dfs"), dfsLast);
+  drawLab(document.getElementById("cmp-bfs"), bfsLast);
+  document.getElementById("cmp-dfs-cap").textContent = dfsLast.text;
+  document.getElementById("cmp-bfs-cap").textContent = bfsLast.text;
+
+  const demoD = silentDijkstra("robledo", "poblado");
+  const demoB = silentBfs("robledo", "poblado");
+  document.getElementById("ex-dij").textContent = fmt(demoD.meters) + " en " + calles(demoD.path.length - 1);
+  document.getElementById("ex-bfs").textContent = fmt(demoB.meters) + " en " + calles(demoB.hops);
+  updateArms();
+  updateCmp();
+
+  document.getElementById("prev").addEventListener("click", () => goSlide(slideIndex - 1));
+  document.getElementById("next").addEventListener("click", () => goSlide(slideIndex + 1));
+  document.getElementById("start-btn").addEventListener("click", () => goSlide(1));
+  document.getElementById("arm-start").addEventListener("click", () => { mapState.arm = "start"; updateArms(); });
+  document.getElementById("arm-end").addEventListener("click", () => { mapState.arm = "end"; updateArms(); });
+  document.getElementById("swap-od").addEventListener("click", () => {
+    const tmp = mapState.start;
+    mapState.start = mapState.end;
+    mapState.end = tmp;
+    updateArms();
+    updateCmp();
+    players.map.rebuild();
+  });
+  document.getElementById("algo-seg").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-algo]");
+    if (!btn) return;
+    mapState.algo = btn.dataset.algo;
+    document.querySelectorAll("#algo-seg button").forEach((b) => b.classList.toggle("on", b === btn));
+    updateCmp();
+    players.map.rebuild();
+  });
+  document.querySelectorAll("[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const [a, b] = btn.dataset.preset.split(",");
+      mapState.start = a;
+      mapState.end = b;
+      mapState.arm = "end";
+      updateArms();
+      updateCmp();
+      players.map.rebuild();
+    });
+  });
+  document.querySelectorAll(".qa").forEach((btn) => {
+    btn.addEventListener("click", () => btn.nextElementSibling.classList.toggle("show"));
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.target.matches("input, textarea")) return;
+    const player = currentPlayer();
+    if (event.key === "ArrowRight" || event.key === "PageDown") {
+      event.preventDefault();
+      goSlide(slideIndex + 1);
+    } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+      event.preventDefault();
+      goSlide(slideIndex - 1);
+    } else if (event.key === "Home") {
+      goSlide(0);
+    } else if (event.key === "End") {
+      goSlide(slides.length - 1);
+    } else if ((event.key === "n" || event.key === "N") && player) {
+      event.preventDefault();
+      player.step(1);
+    } else if ((event.key === "p" || event.key === "P") && player) {
+      event.preventDefault();
+      player.step(-1);
+    } else if (event.key === " " && player && !event.target.closest("button")) {
+      event.preventDefault();
+      player.toggle();
+    }
+  });
+
+  const fromHash = Number(String(location.hash || "").replace("#", ""));
+  goSlide(Number.isInteger(fromHash) && fromHash >= 1 && fromHash <= slides.length ? fromHash - 1 : 0);
+
+  const check = silentDijkstra("robledo", "poblado");
+  if (!check.path || check.path.join(",") !== "robledo,floresta,laureles,centro,poblado") {
+    console.warn("La ruta de clase cambió", check.path, check.meters);
+  }
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", init);
+}
+</script>
+</body>
+</html>
